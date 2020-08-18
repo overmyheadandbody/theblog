@@ -10,6 +10,10 @@
  * governing permissions and limitations under the License.
  */
 
+import {
+  getTaxonomy
+} from '/scripts/taxonomy.js';
+
  /*
  * lazysizes - v5.2.0
  * The MIT License (MIT)
@@ -100,7 +104,15 @@ export function addClass(selector, cssClass, parent) {
       el.classList.add(cssClass);
     }  
   });
-} 
+}
+
+/**
+ * Sets the lang attribute on the <html> tag.
+ */
+function setDocumentLanguage() {
+  // set document language
+  document.documentElement.setAttribute('lang', window.blog.language);
+}
 
 /**
  * Removes header and footer if empty.
@@ -137,7 +149,7 @@ export function getSection(index) {
  */
 export function getLink(type, name) {
   if (!type.endsWith('s')) type += 's';
-  return `${window.blog.context}${window.blog.language}/${type}/${name.replace(/\s/gm, '-').replace(/\&amp;/gm,'').replace(/\&/gm,'').toLowerCase()}.html`;
+  return `${window.blog.context}${window.blog.language}/${type}/${name.replace(/\s/gm, '-').replace(/\&amp;/gm,'').replace(/\&/gm,'').replace(/\./gm,'').toLowerCase()}.html`;
 }
 
 /**
@@ -192,7 +204,7 @@ export function itemTransformer(item) {
       year: 'numeric',
       timeZone: 'UTC',
     }).replace(/\//g, '-'),
-    authorUrl: getLink(window.blog.TYPE.AUTHOR, item.author),
+    authorUrl: item.author ? getLink(window.blog.TYPE.AUTHOR, item.author) : '',
     topic: item.topics.length > 0 ? item.topics[0] : '',
     topicUrl: item.topics.length > 0 ? getLink(window.blog.TYPE.TOPIC, item.topics[0]) : '',
     path: !window.location.hostname.endsWith('.page') && !isLocalhost() ? item.path.replace('/publish/', '/') : item.path,
@@ -211,19 +223,19 @@ export function addCard(hit, $container) {
   const $item = createTag('div', {'class': 'card'});
   $item.innerHTML = `
   <div class="hero">
-    <a href="/${hit.path}" title="${hit.title}"><img class="lazyload" src="#" data-src="${hit.hero}" alt="${hit.title}"></a>
+    <a href="/${hit.path}" title="${hit.title}" tabindex="-1"><img class="lazyload" src="#" data-src="${hit.hero}" alt="${hit.title}"></a>
   </div>
   <div class="content">
     <p class="topic"><a href="${hit.topicUrl}" title="${hit.topic}">${hit.topic}</a></p>
     <h2><a href="/${hit.path}" title="${hit.title}">${hit.title}</a></h2>
-    <p class="teaser"><a href="/${hit.path}" title="${hit.teaser}…">${hit.teaser}…</a></p>
+    <p class="teaser"><a href="/${hit.path}" title="${hit.teaser}" tabindex="-1">${hit.teaser}</a></p>
     <p class="date">${hit.date}</p>
   </div>`;
   $container.appendChild($item);
   return $item;
 }
 
-function addArticlesToDeck(hits, omitEmpty, transformer, hasMore) {
+function addArticlesToDeck(hits, omitEmpty, transformer, hasMore, setFocus) {
     // console.log('adding articles to page', window.blog.page);
     let $deck = document.querySelector('.articles .deck');
     if (!$deck) {
@@ -244,14 +256,20 @@ function addArticlesToDeck(hits, omitEmpty, transformer, hasMore) {
       // add hits to card container
       hits
         .map(transformer)
-        .forEach((hit) => addCard(hit, $deck));
+        .forEach((hit, i) => {
+          const $card=addCard(hit, $deck);
+          if (!i && setFocus) $card.querySelector('a').focus();
+        });
 
       let $more = $deck.parentNode.querySelector('.load-more');
       if (hasMore) {
         if (!$more) {
           // add button to load more
-          const $more = createTag('a', { 'class': 'action primary load-more' });
+          const $more = createTag('a', { 'class': 'action primary load-more', role: 'button', tabindex: '0'});
           $more.addEventListener('click', fetchArticles);
+          $more.addEventListener('keydown', (evt) => {
+            if (evt.keyCode == 13 || evt.keyCode == 32) $more.click();
+          });
           $deck.parentNode.appendChild($more);
           const title = window.getComputedStyle($more, ':before').getPropertyValue('content');
           if (title !== 'normal') {
@@ -264,13 +282,22 @@ function addArticlesToDeck(hits, omitEmpty, transformer, hasMore) {
     }
 }
 
-function translateTable(pages, index) {
+async function translateTable(pages, index) {
+  const taxonomy = await getTaxonomy();
   pages.forEach((e) => {
     let r=e;
     r.products=JSON.parse(r.products);
-    r.topics=JSON.parse(r.topics);
+    let topics=JSON.parse(r.topics);
     if (!r.products) r.products=[];
-    if (!r.topics) r.topics=[];
+    if (!topics) topics=[];
+    // also append parents
+    r.topics = topics;
+    topics.forEach((topic) => {
+      r.topics = r.topics.concat(taxonomy.getParents(topic));
+    });
+    // filter duplicates
+    r.topics = Array.from(new Set(r.topics));
+
     index.pathLookup[r.path]=r;
     index.articles.push (r);
   })
@@ -292,8 +319,9 @@ export async function fetchArticleIndex(offset) {
   let response=await fetch(indexUrl);
 
   if (response.ok) { 
-    let json = await response.json();
-    translateTable(json,window.blog.articleIndex);
+    const json = await response.json();
+    const data = Array.isArray(json) ? json : json.data;
+    await translateTable(data,window.blog.articleIndex);
   }
   console.log(`fetched article index: at ${index.articles.length} entries, ${index.done?'':'not'} done.`)
 }
@@ -320,7 +348,18 @@ async function fetchHits(filters, limit, cursor) {
     for (;i<articles.length;i++) {
       const e=articles[i];
       let matched=true;
-      if (filters.topics && !e.topics.includes(filters.topics)) matched=false;
+      if (filters.topics) {
+        filters.topics = Array.isArray(filters.topics) ? filters.topics : [filters.topics];
+        // find intersection between filter.topics and current e.topics
+        if (filters.topics.filter((t) => {
+          // quick fix to get caseless comparison working with minimum impact
+          // should be rewritten more efficiently
+          const ltopics=e.topics.map(item => item.toLowerCase())
+          const lt=t.toLowerCase();
+          if(ltopics.includes(lt) || e.products.includes(t.replace('Adobe ', ''))) return true;
+          else return false;
+        } ).length === 0) matched=false;
+      } 
       if (filters.author && (e.author!=filters.author)) matched=false;
 
       if (filters.products) {
@@ -373,7 +412,11 @@ export async function fetchArticles({
     filters.paths = getPostPaths('h2#featured-posts', 1, true);
     filters.pathsOnly = true;
   } else if (window.blog.pageType === window.blog.TYPE.TOPIC) {
-    filters.topics = document.title;
+    const taxonomy = await getTaxonomy();
+    const currentTopic = document.title.trim();
+    let topics = [currentTopic].concat(taxonomy.getChildren(currentTopic));
+    if (currentTopic.includes('Adobe ')) topics = topics.concat(taxonomy.getChildren(currentTopic.replace('Adobe ', '')));
+    filters.topics = topics;
     if (window.blog.productFilters) {
       filters.products=window.blog.productFilters;
     }
@@ -383,12 +426,16 @@ export async function fetchArticles({
     filters.paths = getPostPaths('h2#featured-posts', 1, true);
   }
   window.blog.page = window.blog.page === undefined ? 0 : window.blog.page + 1;
-  const result=await fetchHits(filters, pageSize, window.blog.cursor?window.blog.cursor:0);
-  const hits=result.hits;
-  window.blog.cursor=result.cursor;
-
-  addArticlesToDeck(hits, omitEmpty, transformer, result.cursor);
-  if (typeof callback === 'function') callback(hits);
+  if (!(filters.pathsOnly && filters.paths.length==0)) {
+    const result=await fetchHits(filters, pageSize, window.blog.cursor?window.blog.cursor:0);
+    const hits=result.hits;
+    const setFocus=window.blog.page?true:false;
+    window.blog.cursor=result.cursor;
+  
+    addArticlesToDeck(hits, omitEmpty, transformer, result.cursor, setFocus);
+    if (typeof callback === 'function') callback(hits);
+  
+  }
 }
 
 /**
@@ -407,6 +454,7 @@ export function applyFilters(products) {
 }
 
 window.addEventListener('load', function() {
+  setDocumentLanguage();
   removeHeaderAndFooter();
   addPageTypeAsBodyClass();
 });

@@ -17,12 +17,6 @@
 
 .post-page main {
   visibility: visible;
-  display: grid;
-  grid-template-areas: "hero-image"
-                       "post-header"
-                       "post-body"
-                       "topics"
-                       "articles";
 }
 
 .post-page .post-title {
@@ -37,7 +31,6 @@
 }
 
 .post-page .hero-image {
-  grid-area: hero-image;
   width: 100%;
   padding: 0;
   margin: 0;
@@ -46,7 +39,6 @@
 .post-page main .hero-image img {
   width: 100%;
   object-fit: cover;
-  height: 220px;
 }
 
 
@@ -60,50 +52,57 @@
 }
 
 .post-page main div.hero-image p:nth-of-type(2) {
-  text-align: right;
+  text-align: left;
   width: 100%;
+  max-width: 600px;
+  margin: auto;
   font-style: italic;
   font-size: 1rem;
   line-height: 1.5;
-  padding-right: 20px;
+  padding: 0 32px;
+  color: #4b4b4b;
 }
 
 .post-page main div.post-header {
-  grid-area: post-header;
   align-self: center;
-  margin-top: 32px;
+  margin-top: 49px;
 }
 
-.post-page main div.post-header > .post-author {
+.post-page main div.post-author {
   margin-top: 20px;
-  height: 118px;
+  height: 96px;
   padding-top: 0;
   padding-bottom: 0;
 }
 
+.post-page main div.post-author .author {
+  max-width: 600px; 
+  margin: 20px auto 0 auto;
+}
 
-.post-page main>div.post-body .images img {
+.post-page main>div.post-body .images img, .embed {
   margin-top: 64px;
 }
 
-.post-page main>div.post-body {
-  grid-area: post-body;
-  padding-top: 0;
-  padding-bottom: 0;
-  margin-top: 30px;
+.post-page main>div.post-body p.legend {
+  margin-top: 1em;
+  font-style: italic;
+  font-size: 14px;
+  color: #4b4b4b
 }
 
-.post-page main>div.topics {
-  grid-area: topics;
+
+.post-page main>div.post-body {
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 57px;
 }
 
 .post-page main>div.articles {
-  grid-area: articles;
   padding-top: 80px;
 }
 
 .post-page main>div.products {
-  grid-area: products;
   border-style: solid;
   border-color: #dddddd;
   border-width: 2px 0 2px 0;
@@ -177,7 +176,7 @@
 }
 
 .post-page .topics {
-  margin: 24px auto 56px auto;
+  margin: 0 auto 56px auto;
   padding: 0;
   text-align: center;
 }
@@ -250,6 +249,28 @@
   margin-top: 32px;
 }
 
+.post-page main .pullquote {
+  border-left: 3px solid #367ea8;
+  padding: 12px 24px;
+}
+
+.post-page main>div.post-body .pullquote h2 {
+  color: #367ea8;
+  margin-top: 12px;
+}
+
+.post-page main>div.post-body .pullquote .images {
+  margin: 0;
+}
+
+.post-page main>div.post-body .pullquote .images img {
+  height: 96px;
+  width: 96px;
+  object-fit: cover;
+  border-radius: 100%;
+  margin: 0;
+}
+
 .post-page .products a {
   margin: 0 .125rem .5rem;
   font-size: .75rem;
@@ -260,6 +281,8 @@
   height: 45px;
   margin: 0 .188rem;
 }
+
+
 
 .post-page .social::before {
   content: "Follow me on";
@@ -299,7 +322,8 @@
   margin-top: 0;
 }
 
-.embed-promotions>div.default {
+.embed-internal-promotions>div.default,
+.embed-internal-undefined>div.default {
   display: flex;
   padding: 24px 0;
   border-top: 2px solid #ddd;
@@ -307,13 +331,14 @@
   margin: 64px 0;
 }
 
-.embed-promotions>div.default>p {
+.embed-internal-promotions>div.default>p,
+.embed-internal-undefined>div.default>p {
   margin: 0;
   padding: 0;
   line-height: 0;
 }
 
-.embed-promotions .embed-promotions-text {
+.embed-promotions-text {
   padding-left: 32px;
 }
 
@@ -349,20 +374,29 @@
   background-size: cover;
   background-position: center center;
   color: #fff;
-  padding: 30px 10px;
+  padding: 30px 32px;
   font-family: adobe-clean,sans-serif;
   margin-top: 48px;
+  padding: none;
+  border: none;
 }
 
 .banner .banner-left, .banner .banner-right {
   flex: 0 0 50%;
-
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
   z-index: 1;
-  padding: 10px 20px
+  padding: 10px 20px;
+}
+
+.banner .banner-left {
+  align-items: center;
+  text-align: center;
+}
+
+.banner .banner-right {
+  align-items: flex-start;
 }
 
 .banner .banner-left img {
@@ -376,21 +410,19 @@
   font-size: 2.3rem;
   font-weight: 200;
   line-height: 2.8rem;
-  text-align: center;
   margin: 0;
 }
 
 .banner .banner-right a {
-  padding: 10px 30px;
-  border: solid 1px #fff;
-  border-radius: 5px;
-  font-size: .8rem;
+  padding: 3px 15px;
+  border: solid 2px #fff;
+  border-radius: 20px;
+  font-size: 15px;
   color: #fff;
-  text-transform: uppercase;
   text-decoration: none;
   cursor: pointer;
   line-height: 1.5;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .banner .banner-right p {
@@ -413,7 +445,37 @@
   margin-top: -73px !important;
 }
 
-@media (min-width:600px) {
+.post-page main .predicted-url {
+  text-align: center;
+  background-color: #707070;
+  color: white;
+  font-size: 14px;
+}
+
+.post-page main .post-title h3 {
+  display: none;
+}
+
+.post-page main>div.topics {
+  margin-top: 64px;
+  border-top: 1px solid #eaeaea;
+  padding-top: 32px;
+  margin-left: 32px;
+  margin-right: 32px;
+  text-align: left;
+}
+
+
+
+@media (min-width:700px) {
+
+  .post-page main>div.topics {
+    margin-bottom: 80px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
 
   .post-page main>div.post-header>div {
     margin-left: 0;
@@ -424,36 +486,62 @@
 
   .post-page main>div.post-header,
   .post-page main>div.topics {
-    margin-left: 128px;
-    margin-right: 128px;
+    margin-left: auto;
+    margin-right: auto;
     padding-left: 0;
     padding-right: 0;
+    max-width: 600px
   }
 
-  .post-page main>div.topics {
-    margin-bottom: 80px;
+
+  .post-page .hero-image {
+    max-width: 1000px;
+    margin: auto;
+  }
+  .post-page .hero-image img {
+    max-height: 438px;
+    object-fit: cover;
   }
 
   .post-page main>div.post-body {
-    margin-left: 64px;
-    margin-right: 64px;
-    padding: 0;  
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 24px;
+    padding: 0;
+    max-width: 800px;
   }
 
   .post-page main>div.post-body>* {
-    margin-left: 64px;
-    margin-right: 64px;  
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .post-page main>div.post-body>.embed {
+    max-width: 800px;
+  }
+
+  .post-page main>div.post-body>.embed.embed-internal-promotions,
+  .post-page main>div.post-body>.embed.embed-internal-undefined {
+    max-width: 600px;
+  }
+
+  .post-page main>div.post-body>.embed.embed-internal-promotions.embed-banner,
+  .post-page main>div.post-body>.embed.embed-internal-undefined.embed-banner {
+    max-width: 800px;
   }
 
   .post-page main>div.post-body>p.images {
     margin-left: 0px;
     margin-right: 0px;
     text-align: center;
+    max-width: 800px;
   }
 
   .post-page main>div.post-body>p.images.left {
-    margin-left: 64px;
-    margin-right: 64px;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 600px;
   }
 
   .post-page main>div.post-body>p.images>img {
@@ -467,8 +555,9 @@
     display: block;
   }
 
-  .banner {
+  main>div.post-body div.banner {
     flex-direction: row;
+    margin: 32px;
   }
 
   /*
@@ -480,62 +569,10 @@
 
 }
 
-@media (min-width:1100px) {
-
-  .post-page main  {
-    padding-top: 16px;
-    box-sizing: border-box;
-  }  
-
-  .post-page main .post-body {
-    box-sizing: border-box;
+@media (min-width:900px) {
+  .post-page main>div.post-header,
+  .post-page main>div.topics {
+    margin-left: auto;
+    margin-right: auto;
   }
-
-  .post-page main div.hero-image img {
-    height: 360px;
-  }
-
-  .post-page main div.hero-image p:nth-of-type(2) {
-    padding-right: 0;
-  }
-
-  .post-page main>div.products {
-    width: 170px;
-    padding: 0;
-    border: 0;
-    margin: 0;
-  }
-
-  .post-page main>div.products .prod-design {
-    display: block;
-  }
-  
-  .post-page main>div.products .prod-design>div{
-    margin-top: 30px;
-  }
-
-  .post-page main {
-    grid-template-areas: " . hero-image hero-image post-header post-header . "
-                         " . .          post-body  post-body   . . "
-                         " . .          topics     topics      . . "
-                         "articles articles articles articles articles articles";
-    grid-template-columns: auto 170px minmax(auto, 430px) minmax(auto, 430px) 170px auto;
-  }
-
-  .post-page main>div.category, .post-page main>div.post-title, .post-page main>div.author {
-    margin-left: 32px;
-    margin-right: 32px;
-    padding-left: 0px;
-    padding-right: 64px;
-  }
-
-  .post-page main>div.post-body, .post-page main>div.post-header {
-    margin: 0;
-    padding: 0;
-  }
-
-  .post-page main>div.post-header {
-    padding-left: 32px;
-  }
-
 }

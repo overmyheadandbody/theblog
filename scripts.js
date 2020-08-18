@@ -32,6 +32,79 @@ function loadCSS(href) {
   document.head.appendChild(link);
 };
 
+
+function checkDX(tags) {
+  const dxtags=`Experience Cloud, Experience Manager, Magento Commerce, Marketo Engage, Target, Commerce Cloud, Campaign, Audience Manager, Analytics, Advertising Cloud,
+      Travel & Hospitality, Media & Entertainment, Financial Services, Government, Non-profits, Other, Healthcare, High Tech, Retail, Telecom, Manufacturing, Education, 
+      B2B, Social, Personalization, Campaign Management, Content Management, Email Marketing, Commerce, Analytics, Advertising, Digital Transformation`;
+  const dx=dxtags.split(',').map(e => e.trim());
+  let found=false;
+  tags.split(',').forEach((p) => {
+    p=p.trim();
+    if (dx.includes(p)) found=true; 
+  });
+  return found;
+}
+
+/**
+ * sets marketing tech context
+ */
+
+function setMarTechContext() {
+  var env='dev';
+  var hostname=window.location.hostname;
+  if (hostname.includes('staging')) env='stage';
+  if (hostname == 'blog.adobe.com') env='production';
+
+  var isDX=false;
+  document.querySelectorAll('main>div:last-of-type>p').forEach(($p) => {
+    if ($p.innerHTML.includes('Products:') || $p.innerHTML.includes('Topics:')) {
+      if (checkDX($p.innerHTML.split(':')[1])) {
+        isDX=true;
+      }
+    }
+  });
+
+  var accounts='';
+  if (isDX) {
+    if (env == 'production') {
+      accounts='adbadobedxprod';
+    }
+    if (env == 'stage') {
+      accounts='adbadobedxqa';
+    }
+  }
+
+  window.marketingtech = {
+    adobe: {
+      launch: {
+        property: 'global',
+        environment: env  // “production” for prod/live site or “stage” for qa/staging site
+      },
+      analytics: {
+        additionalAccounts: accounts // additional report suites to send data to “,” separated  Ex: 'RS1,RS2'
+      },
+      target: true,    // if target needs to be enabled else false
+      audienceManager: true    // if audience manager needs to be enabled else false
+    }
+  };
+  // console.log(window.marketingtech)
+}
+
+/**
+ * sets digital data
+ */
+
+function setDigitalData() {
+  var langMap={'en': 'en-US'};
+  var lang=window.blog.language;
+  if (langMap[lang]) lang=langMap[lang];
+  digitalData._set('page.pageInfo.language', lang);
+  // console.log(lang);
+}
+
+
+
 /**
  * Return the correct CMP integration ID based on the domain name
  */
@@ -44,8 +117,7 @@ function getOtDomainId() {
   };
   const currentDomain = Object.keys(domains).find(domain => window.location.host.indexOf(domain) > -1);
 
-  //TODO: remove `-test` once integration is ready for production
-  return `${domains[currentDomain] || domains[Object.keys(domains)[0]]}-test`;
+  return `${domains[currentDomain] || domains[Object.keys(domains)[0]]}`;
 };
 
 // Prep images for lazy loading and use adequate sizes
@@ -84,6 +156,7 @@ window.blog = function() {
     AUTHOR: 'author',
     TOPIC: 'topic',
     PRODUCT: 'product',
+    BLANK: 'blank',
   };
   const LANG = {
     EN: 'en',
@@ -112,7 +185,7 @@ window.blog = function() {
     }
     if (segs.length >= 2) {
       // post pages
-      if (segs[1] === 'drafts' || segs[1] === 'publish' || segs[1] === 'documentation' || /\d{4}\/\d{2}\/\d{2}/.test(segs.join('/'))) {
+      if (segs[1] === 'drafts' || segs[1] === 'publish' || segs[1] === 'fpost' || segs[1] === 'documentation' || /\d{4}\/\d{2}\/\d{2}/.test(segs.join('/'))) {
         pageType = TYPE.POST;
       } else {
         for (let [key, value] of Object.entries(TYPE)) {
@@ -123,6 +196,9 @@ window.blog = function() {
         }
       }
     }
+  }
+  if (window.isErrorPage) {
+    pageType = TYPE.BLANK; 
   }
   return { context, language, pageType, TYPE, LANG };
 }();
@@ -154,3 +230,4 @@ loadJSModule(`/scripts/${window.blog.pageType}.js`);
 if (window.blog.language !== window.blog.LANG.EN) { // skip for en
   loadCSS(`/dict.${window.blog.language}.css`);
 }
+

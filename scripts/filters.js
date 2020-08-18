@@ -10,6 +10,10 @@
  * governing permissions and limitations under the License.
  */
 
+import {
+  getTaxonomy
+} from '/scripts/taxonomy.js';
+
 /**
  * Get filter buttons.
  * Set up a click event to show/hide dropdown menu.
@@ -51,19 +55,15 @@ function handleDropdownButtons() {
 }
 
 /**
-* Close dropddown
-*/
-function closeDropdown(dropdownContainer, body) {
-  dropdownContainer.classList.remove('is-open');
-  body.classList.remove('page-overlay');
-}
-
-/**
 * Toggle dropddown
 */
 function toggleDropdown(dropdownContainer, body) {
   dropdownContainer.classList.toggle('is-open');
   body.classList.toggle('page-overlay');
+  // place tab focus on dropdown button after closing dropdown
+  if (!dropdownContainer.classList.contains('is-open')) {
+    dropdownContainer.querySelector('.filter-btn').focus();
+  }
 }
 
 /**
@@ -85,6 +85,24 @@ function clearCurrentFilters(currentFilterOptions) {
   currentFilterOptions.forEach((option) => {
       option.checked = false;
   });
+}
+
+/**
+ * Apply current selected filters.
+ */
+function applyCurrentFilters(callback) {
+  const filters = [];
+  document.querySelectorAll('.filter-wrapper input[type="checkbox"]').forEach((filter) => {
+    if (filter.checked) filters.push(filter.name);
+  });
+  const clearAllBtn = document.querySelector('.filter-bar > a.action.clear-all')
+  if (filters.length > 0) {
+    clearAllBtn.classList.remove('hide');
+  } else {
+    clearAllBtn.classList.add('hide');
+  }
+  callback(filters);
+  toggleDropdown(document.querySelector('.dropdown'), document.body);
 }
 
 function filterFilters(event) {
@@ -125,16 +143,15 @@ function filterFilters(event) {
 }
 
 function initFilterActions(callback) {
+  const dropdownContainer = document.querySelector('.dropdown');
   if (typeof callback !== 'function') callback = function() {}; 
   handleDropdownButtons();
   // Clear all button
-  const clearAllBtn = document.querySelector('.filter-bar > a.action.clear-all');
-  clearAllBtn.addEventListener('click', (event) => {
+  document.querySelector('.filter-bar > a.action.clear-all').addEventListener('click', (event) => {
     event.stopPropagation();
     const allFilterOptions = document.querySelectorAll('.dropdown-menu');
     clearAllFilters(allFilterOptions);
-    closeDropdown(document.querySelector('.dropdown'), document.body);
-    clearAllBtn.classList.add('hide');
+    event.target.classList.add('hide');
     callback([]);
   });
 
@@ -148,17 +165,7 @@ function initFilterActions(callback) {
   // Apply button
   document.querySelector('.filter-bar .action.apply').addEventListener('click', (event) => {
     event.stopPropagation();
-    const filters = [];
-    document.querySelectorAll('.filter-wrapper input[type="checkbox"]').forEach((filter) => {
-      if (filter.checked) filters.push(filter.name);
-    });
-    toggleDropdown(document.querySelector('.dropdown'), document.body);
-    if (filters.length > 0) {
-      clearAllBtn.classList.remove('hide');
-    } else {
-      clearAllBtn.classList.add('hide');
-    }
-    callback(filters);
+    applyCurrentFilters(callback);
   });
 
   // Search field
@@ -166,15 +173,26 @@ function initFilterActions(callback) {
   searchField.addEventListener('search', filterFilters);
   searchField.addEventListener('keyup', filterFilters);
 
-  // ESC key
+  // Keyboard access
   document.body.addEventListener('keyup', (event) => {
     if (event.key === 'Escape') {
-      closeDropdown(document.querySelector('.dropdown'), document.body);
+      if (dropdownContainer.classList.contains('is-open')) {
+        toggleDropdown(dropdownContainer, document.body);
+      }
     }
-  })
+  });
+  document.querySelector('.dropdown-menu').addEventListener('keyup', (event) => {
+    if (event.key === 'Enter') {
+      if (dropdownContainer.classList.contains('is-open')) {
+        event.stopPropagation();
+        applyCurrentFilters(callback);
+      }
+    }
+  });
+
 }
 
-function drawFilterBar() {
+async function drawFilterBar() {
   const filterBar = document.querySelector('.filter-wrapper');
   if (!filterBar) {
     // topic has no filter bar
@@ -185,7 +203,7 @@ function drawFilterBar() {
     <div class="filter-bar">
       <div class="filter">
         <div class="dropdown">
-          <button class="btn filter-btn" type="button">
+          <button role="button" tabindex="0" aria-haspopup="true" class="btn filter-btn" type="button">
             Products &amp; Technology
             <span class="arrow">
               <span></span>
@@ -217,41 +235,31 @@ function drawFilterBar() {
     <span class="results"></span>
   </div>`;
 
-  fetch(`/${window.blog.language}/topics/_taxonomy.plain.html`)
-  .then(resp => resp.text()
-  .then((tax) => {
-      const $tax=document.createElement('div');
-      $tax.innerHTML=tax;
-      let $productsAndTech;
-      $tax.querySelectorAll('li').forEach((e) => {
-        let t;
-        if (e.firstChild) t=e.firstChild.textContent;
-        if (t && t.toLowerCase() == 'products & technology') $productsAndTech=e;
-      });
-      let html='';
-      if ($productsAndTech) {
-        $productsAndTech.querySelectorAll(':scope>ul>li').forEach((l) => {
-          html+=`<legend>${l.firstChild.textContent}</legend>`;
-          
-          l.querySelectorAll(':scope>ul>li').forEach((p) => {
-          html+=`<div class="option">
-            <input type="checkbox" id="${p.firstChild.textContent}" name="${p.firstChild.textContent}">
-            <label for="${p.firstChild.textContent}">${p.firstChild.textContent}</label>
-          </div>`
-          })
-        })
-      document.querySelector('.filter-wrapper .options').innerHTML=html;
-      }
-    })  
-  );
+  filterBar.innerHTML = html;
 
-  filterBar.innerHTML=html;
-  filterBar.parentNode.remove();
+  const taxonomy = await getTaxonomy();
+  const $productsAndTech = taxonomy.getCategory(taxonomy.PRODUCTS);
+
+  let filterBarHTML = '';
+  if ($productsAndTech) {
+    $productsAndTech.querySelectorAll(':scope>ul>li').forEach((l) => {
+      filterBarHTML += `<legend>${l.firstChild.textContent}</legend>`;
+      
+      l.querySelectorAll(':scope>ul>li').forEach((p) => {
+        filterBarHTML+=`<div class="option">
+        <input type="checkbox" id="${p.firstChild.textContent}" name="${p.firstChild.textContent}">
+        <label for="${p.firstChild.textContent}">${p.firstChild.textContent}</label>
+      </div>`
+      })
+    })
+    document.querySelector('.filter-wrapper .options').innerHTML = filterBarHTML;
+  }
+
   return document.querySelector('main').appendChild(filterBar);
 }
 
-export function addFilters(callback) {
-  if (drawFilterBar()) {
+export async function addFilters(callback) {
+  if (await drawFilterBar()) {
     loadCSS('/style/filters.css');
     initFilterActions(callback);
   }

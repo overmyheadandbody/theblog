@@ -9,30 +9,19 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
+
 import {
   addClass,
-  fetchArticles,
-  applyFilters,
 } from '/scripts/common.js';
-import {
-  addFilters,
-} from '/scripts/filters.js';
+
 
 /**
  * Decorates the topic page with CSS classes
  */
-function decorateTopicPage() {
-  addClass('.topic-page main>div:first-of-type', 'topic-title');
-  const img = document.querySelector('main img');
-  if (img) {
-    const title = document.querySelector('.topic-title');
-    title.style.background=`url(${img.getAttribute('src')}) no-repeat center center`;
-    title.style.backgroundSize=`cover`;
-  }
+function decorateBlankPage() {
+  if (window.isErrorPage) { addClass('body',`error-${window.errorCode}`) }
 }
 
 window.addEventListener('load', async function() {
-  decorateTopicPage();
-  await addFilters(applyFilters);
-  fetchArticles();
+  decorateBlankPage();
 });
