@@ -6,7 +6,7 @@ indices:
     fetch: https://oproma--theblog--adobe.project-helix.page/{path}
     include:
       - (en|de|fr)/publish/*/*/*/*.(md|docx)
-    target: https://adobe.sharepoint.com/sites/TheBlog/Shared%20Documents/oproma-theblog/en/query-index.xlsx?d=we7bf6b3af3234076968b30a1565f2373&csf=1&web=1&e=q9o8tW
+    target: https://adobe-my.sharepoint.com/:f:/r/personal/acapt_adobe_com/Documents/helix/oproma-theblog/en/query-index.xlsx?d=we7bf6b3af3234076968b30a1565f2373&csf=1&web=1&e=q9o8tW
     sitemap: en/query-index.json
     properties:
       author:
