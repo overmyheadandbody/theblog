@@ -385,7 +385,8 @@
   <textarea class="offscreen" id="copybuffer"></textarea>
 
   <script>
-    fetch('/en/topics/_taxonomy.plain.html')
+    // TODO: DO NOT MERGE
+    fetch('/en/topics/_taxonomy_v2.plain.html')
       .then((response) => {
         return response.text();
       })
