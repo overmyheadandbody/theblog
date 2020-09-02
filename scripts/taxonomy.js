@@ -15,7 +15,8 @@ export async function getTaxonomy() {
     return window.blog.taxonomy;
   }
 
-  return fetch('/en/topics/_taxonomy.plain.html')
+  // TODO: DO NOT MERGE!
+  return fetch('/en/topics/_taxonomy_v2.plain.html')
     .then((response) => {
       return response.text();
     })
